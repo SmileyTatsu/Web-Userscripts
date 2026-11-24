@@ -1,8 +1,14 @@
 // ==UserScript==
 // @name         NovelAI Prompt Chunk Gallery
 // @namespace    https://github.com/SmileyTatsu
-// @version      0.3.2
+// @version      0.3.3
 // @description  Replaces the Prompt Chunks popup on novelai.net/image with a searchable thumbnail gallery.
+// @author       SmileyTatsu
+// @homepage     https://github.com/SmileyTatsu/Web-Userscripts/tree/main/novelai-chunk-gallery
+// @homepageURL  https://github.com/SmileyTatsu/Web-Userscripts/tree/main/novelai-chunk-gallery
+// @supportURL   https://github.com/SmileyTatsu/Web-Userscripts/issues
+// @downloadURL  https://raw.githubusercontent.com/SmileyTatsu/Web-Userscripts/main/novelai-chunk-gallery/novelai-chunk-gallery.user.js
+// @updateURL    https://raw.githubusercontent.com/SmileyTatsu/Web-Userscripts/main/novelai-chunk-gallery/novelai-chunk-gallery.user.js
 // @match        https://novelai.net/*
 // @run-at       document-idle
 // @grant        GM_getValue

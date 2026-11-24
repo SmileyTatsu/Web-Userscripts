@@ -1,4 +1,4 @@
-# NovelAI Prompt Chunk Gallery (v0.3.2)
+# NovelAI Prompt Chunk Gallery (v0.3.3)
 
 Install: Tampermonkey -> Create new script -> paste `novelai-chunk-gallery.user.js` (or drag the file into the browser).
 

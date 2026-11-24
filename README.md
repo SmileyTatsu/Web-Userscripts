@@ -9,7 +9,11 @@ Monorepo for my userscripts and small browser tools. Prettier and ESLint are con
 ## Install
 
 1. Install a userscript manager such as [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/).
-2. Open the project's `*.user.js` file, click **Raw**, and your manager will offer to install it. Or create a new script in the manager and paste the file contents.
+2. Click a script's install link below; your manager will offer to install it. Scripts update themselves from this repo.
+
+| Script                       | Install                                                                                                                                                 |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| NovelAI Prompt Chunk Gallery | [novelai-chunk-gallery.user.js](https://raw.githubusercontent.com/SmileyTatsu/Web-Userscripts/main/novelai-chunk-gallery/novelai-chunk-gallery.user.js) |
 
 ## Development
 
