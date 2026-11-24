@@ -1,0 +1,22 @@
+{
+  "name": "web-userscripts",
+  "private": true,
+  "description": "Monorepo of userscripts and related browser tooling.",
+  "license": "UNLICENSED",
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "check": "pnpm format:check && pnpm lint"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.15.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-userscripts": "^0.5.6",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1"
+  },
+  "type": "module"
+}
