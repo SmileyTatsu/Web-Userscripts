@@ -46,7 +46,7 @@
     get: (k, d) => {
       try {
         if (hasGM) return GM_getValue(k, d);
-        const v = localStorage.getItem('ncg:' + k);
+        const v = localStorage.getItem(`ncg:${k}`);
         return v == null ? d : JSON.parse(v);
       } catch {
         return d;
@@ -55,7 +55,7 @@
     set: (k, v) => {
       try {
         if (hasGM) GM_setValue(k, v);
-        else localStorage.setItem('ncg:' + k, JSON.stringify(v));
+        else localStorage.setItem(`ncg:${k}`, JSON.stringify(v));
       } catch (e) {
         console.warn('[ncg] save failed', e);
       }
@@ -63,7 +63,7 @@
     del: (k) => {
       try {
         if (hasGM) GM_deleteValue(k);
-        else localStorage.removeItem('ncg:' + k);
+        else localStorage.removeItem(`ncg:${k}`);
       } catch {}
     },
     keys: () => {
@@ -323,16 +323,6 @@
     });
   }
 
-  function editNative(entry) {
-    return queue(async () => {
-      const panel = await openNative({ hidden: false });
-      if (!panel) return false;
-      const { el } = await locate(panel, entry);
-      el?.querySelector(CONFIG.editChunkSel)?.click();
-      if (busy > 0) busy--; // leave the panel open for the user
-      return !!el;
-    });
-  }
   async function openNativeVisible() {
     const p = await openNative({ hidden: false });
     if (busy > 0) busy--;
@@ -341,12 +331,9 @@
 
   /* Drive the native edit form (hidden) so the gallery can create / edit / delete chunks itself. */
   const setVal = (el, v) => {
-    const proto =
-      el instanceof HTMLTextAreaElement
-        ? HTMLTextAreaElement.prototype
-        : el instanceof HTMLSelectElement
-          ? HTMLSelectElement.prototype
-          : HTMLInputElement.prototype;
+    let proto = HTMLInputElement.prototype;
+    if (el instanceof HTMLTextAreaElement) proto = HTMLTextAreaElement.prototype;
+    else if (el instanceof HTMLSelectElement) proto = HTMLSelectElement.prototype;
     Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, v);
     el.dispatchEvent(new Event('input', { bubbles: true }));
     el.dispatchEvent(new Event('change', { bubbles: true }));
@@ -360,8 +347,7 @@
       const panel = await openNative();
       if (!panel) return { ok: false, reason: 'native-panel' };
       const formOpen = () => panel.querySelector(CONFIG.formNameSel); // present for chunk AND category forms
-      let expandedLabel = null,
-        ok = false;
+      let expandedLabel = null;
       try {
         let trigger;
         if (kind === 'category') {
@@ -405,7 +391,7 @@
           if (!save) return { ok: false, reason: 'no-button' };
           save.click();
         }
-        ok = !!(await waitFor(() => !formOpen(), 4000));
+        const ok = !!(await waitFor(() => !formOpen(), 4000));
         if (!ok) return { ok: false, reason: 'save-failed' };
         if (kind === 'chunk') {
           if (remove && entry) {
@@ -462,11 +448,11 @@
   }
   function setThumb(id, url) {
     thumbs.set(id, url);
-    st.set('thumb:' + id, url);
+    st.set(`thumb:${id}`, url);
   }
   function delThumb(id) {
     thumbs.delete(id);
-    st.del('thumb:' + id);
+    st.del(`thumb:${id}`);
   }
 
   function grabCurrentImage() {
@@ -752,15 +738,9 @@
     else if (c !== '__all') list = list.filter((x) => x.cat === c);
     if (q.length)
       list = list.filter((x) => {
-        const hay = (
-          x.label +
-          ' ' +
-          x.expansion +
-          ' ' +
-          (x.cat || '') +
-          ' ' +
-          (x.m.tags || []).join(' ')
-        ).toLowerCase();
+        const hay = `${x.label} ${x.expansion} ${x.cat || ''} ${(x.m.tags || []).join(
+          ' ',
+        )}`.toLowerCase();
         return q.every((t) => hay.includes(t));
       });
     const s = prefs.sort;
@@ -807,13 +787,11 @@
         true,
       );
     if (n((c) => c.cat === '__official'))
-      h +=
-        '<hr>' +
-        row(
-          '__official',
-          'Official',
-          n((c) => c.cat === '__official'),
-        );
+      h += `<hr>${row(
+        '__official',
+        'Official',
+        n((c) => c.cat === '__official'),
+      )}`;
     ui.side.innerHTML = h;
     ui.side.querySelectorAll('[data-k]').forEach(
       (el) =>
@@ -846,17 +824,15 @@
       ui.main.innerHTML = `<div class="empty">${model.chunks.length ? 'No chunks match.' : 'No chunks loaded yet. Press reload, or click the toolbar button once.'}</div>`;
       return;
     }
-    ui.main.innerHTML =
-      `<div class="${prefs.view === 'grid' ? 'grid' : 'list'}">` +
-      list
-        .map((x) => {
-          const t = thumbs.get(x.id);
-          const bg = t ? `background-image:url(${t})` : `background-color:${flat(esc(x.color))}`;
-          const sub =
-            x.cat === '__official'
-              ? 'Official'
-              : [x.cat, x.m.uses ? x.m.uses + '×' : ''].filter(Boolean).join(' · ');
-          return `<div class="card" data-id="${x.id}">
+    ui.main.innerHTML = `<div class="${prefs.view === 'grid' ? 'grid' : 'list'}">${list
+      .map((x) => {
+        const t = thumbs.get(x.id);
+        const bg = t ? `background-image:url(${t})` : `background-color:${flat(esc(x.color))}`;
+        const sub =
+          x.cat === '__official'
+            ? 'Official'
+            : [x.cat, x.m.uses ? `${x.m.uses}×` : ''].filter(Boolean).join(' · ');
+        return `<div class="card" data-id="${x.id}">
         <div class="thumb" style="${bg}">${t ? '' : esc(initials(x.label))}</div>
         ${x.m.fav ? `<span class="favmark">${ic('star', 14, 'currentColor')}</span>` : ''}
         <div class="acts">
@@ -865,9 +841,8 @@
           <button data-a="more" title="More">${ic('more', 14)}</button>
         </div>
         <div class="meta"><div class="name"><i class="dot" style="background:${esc(x.color)}"></i><span>${esc(x.label)}</span></div><div class="sub">${esc(sub)}</div></div></div>`;
-        })
-        .join('') +
-      '</div>';
+      })
+      .join('')}</div>`;
     const byId = new Map(list.map((x) => [x.id, x]));
     ui.main.querySelectorAll('.card').forEach((card) => {
       const x = byId.get(card.dataset.id);
@@ -912,9 +887,9 @@
         h = ui.pv.offsetHeight;
       let left = r.right + 10;
       if (left + w > innerWidth - 8) left = Math.max(8, r.left - w - 10);
-      let top = Math.min(Math.max(8, r.top), innerHeight - h - 8);
-      ui.pv.style.left = left + 'px';
-      ui.pv.style.top = top + 'px';
+      const top = Math.min(Math.max(8, r.top), innerHeight - h - 8);
+      ui.pv.style.left = `${left}px`;
+      ui.pv.style.top = `${top}px`;
     }, 300);
   }
   function hidePreview() {
@@ -946,9 +921,8 @@
     const r = btn.getBoundingClientRect(),
       w = ui.menu.offsetWidth,
       h = ui.menu.offsetHeight;
-    ui.menu.style.left = Math.max(8, Math.min(r.right - w, innerWidth - w - 8)) + 'px';
-    ui.menu.style.top =
-      (r.bottom + 4 + h > innerHeight ? Math.max(8, r.top - h - 4) : r.bottom + 4) + 'px';
+    ui.menu.style.left = `${Math.max(8, Math.min(r.right - w, innerWidth - w - 8))}px`;
+    ui.menu.style.top = `${r.bottom + 4 + h > innerHeight ? Math.max(8, r.top - h - 4) : r.bottom + 4}px`;
     ui.menu.querySelectorAll('[data-m]').forEach(
       (b) =>
         (b.onclick = (e) => {
@@ -1002,7 +976,7 @@
       if (!el) return toast('No large image found on the page.');
       try {
         const b = await blobFromEl(el);
-        if (!b) throw 0;
+        if (!b) throw new Error('no image data');
         await applyThumb(x, b);
       } catch {
         toast('Could not read that image (blocked by the browser).');
@@ -1032,11 +1006,11 @@
         const k = (n + h / 30) % 12;
         return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))));
       };
-    return '#' + [f(0), f(8), f(4)].map((v) => v.toString(16).padStart(2, '0')).join('');
+    return `#${[f(0), f(8), f(4)].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
   }
-  function wireColor(root, onChange) {
-    const col = root.querySelector('#f-color'),
-      hex = root.querySelector('#f-hex');
+  function wireColor(scope, onChange) {
+    const col = scope.querySelector('#f-color'),
+      hex = scope.querySelector('#f-hex');
     const set = (v) => {
       hex.value = v;
       if (HEX6.test(v)) col.value = v.toLowerCase();
@@ -1044,20 +1018,16 @@
     };
     col.oninput = () => set(col.value);
     hex.oninput = () => set(hex.value);
-    root.querySelector('#f-rand').onclick = () => set(randomColor());
+    scope.querySelector('#f-rand').onclick = () => set(randomColor());
     return { col, hex };
   }
 
   function openEditor(x) {
     const isNew = !x;
     const cats = model.cats.map((c) => c.label);
-    const cur = x
-      ? x.cat && x.cat !== '__official'
-        ? x.cat
-        : ''
-      : cats.includes(state.cat)
-        ? state.cat
-        : '';
+    let cur = '';
+    if (x) cur = x.cat && x.cat !== '__official' ? x.cat : '';
+    else if (cats.includes(state.cat)) cur = state.cat;
     const color = x?.color && HEX6.test(x.color) ? x.color : '#6B7280';
     const orig = {
       label: x?.label ?? '',
@@ -1093,12 +1063,12 @@
     const prev = $('#f-prev');
     const { hex } = wireColor(ui.dlg, () => renderPrev());
 
-    const renderPrev = () => {
+    function renderPrev() {
       const url = pend === undefined ? x && thumbs.get(x.id) : pend;
       prev.style.backgroundImage = url ? `url(${url})` : 'none';
       prev.style.backgroundColor = url ? '' : flat(HEX6.test(hex.value) ? hex.value : '#6B7280');
       prev.textContent = url ? '' : initials($('#f-name').value || '?');
-    };
+    }
     const setPend = async (blob) => {
       try {
         pend = await toThumb(blob);
@@ -1122,7 +1092,7 @@
       if (!el) return toast('No large image found on the page.');
       try {
         const b = await blobFromEl(el);
-        if (!b) throw 0;
+        if (!b) throw new Error('no image data');
         await setPend(b);
       } catch {
         toast('Could not read that image (blocked by the browser).');
@@ -1262,15 +1232,17 @@
       };
     $('#f-name').focus();
   }
-  const failMsg = (r) =>
-    ({
+  function failMsg(r) {
+    const msgs = {
       'native-panel': 'Could not open the native panel.',
       'not-found': 'Chunk not found in the native panel — reload and retry.',
       'no-form': 'The native edit form did not open.',
       'no-button': 'Could not find the native Save/Delete button.',
       'form-rejected': 'The native form did not accept the values.',
       'save-failed': 'The native form did not confirm the save.',
-    })[r] || 'Failed.';
+    };
+    return msgs[r] || 'Failed.';
+  }
 
   async function applyThumb(x, blob) {
     try {
@@ -1287,7 +1259,7 @@
   }
   async function onPaste(e) {
     if (!state.open) return;
-    const f = [...(e.clipboardData?.files ?? [])].find((f) => f.type.startsWith('image/'));
+    const f = [...(e.clipboardData?.files ?? [])].find((file) => file.type.startsWith('image/'));
     if (!f) return;
     if (!ui.dlg.hidden) {
       if (dlgPaste) {
@@ -1304,7 +1276,7 @@
     applyThumb(x, f);
   }
   async function blobFromDrop(e) {
-    const f = [...(e.dataTransfer?.files ?? [])].find((f) => f.type.startsWith('image/'));
+    const f = [...(e.dataTransfer?.files ?? [])].find((file) => file.type.startsWith('image/'));
     if (f) return f;
     const url = e.dataTransfer?.getData('text/uri-list') || e.dataTransfer?.getData('text/plain');
     if (url && /^(https?:|blob:|data:image)/.test(url.trim())) {
@@ -1332,11 +1304,10 @@
       } else closeGallery();
     } else
       toast(
-        r.reason === 'no-editor'
-          ? 'Click in a prompt field first, then insert.'
-          : r.reason === 'not-found'
-            ? 'Chunk not found in the native panel — press reload.'
-            : 'Could not open the native panel.',
+        {
+          'no-editor': 'Click in a prompt field first, then insert.',
+          'not-found': 'Chunk not found in the native panel — press reload.',
+        }[r.reason] || 'Could not open the native panel.',
       );
   }
 
@@ -1409,7 +1380,7 @@
       iconEl = down.target;
       const toks = iconTokens(iconEl);
       if (toks.length) {
-        prefs.iconSel = '.' + toks.join('.');
+        prefs.iconSel = `.${toks.join('.')}`;
         savePrefs();
       }
     }
@@ -1456,7 +1427,7 @@
     GM_registerMenuCommand('Toggle replacing the native panel', () => {
       prefs.intercept = !prefs.intercept;
       savePrefs();
-      alert('Gallery replaces native panel: ' + prefs.intercept);
+      alert(`Gallery replaces native panel: ${prefs.intercept}`);
     });
   }
 
