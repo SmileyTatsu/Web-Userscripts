@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NovelAI Prompt Chunk Gallery
 // @namespace    https://github.com/SmileyTatsu
-// @version      0.3.3
+// @version      0.3.4
 // @description  Replaces the Prompt Chunks popup on novelai.net/image with a searchable thumbnail gallery.
 // @author       SmileyTatsu
 // @homepage     https://github.com/SmileyTatsu/Web-Userscripts/tree/main/novelai-chunk-gallery
@@ -539,6 +539,13 @@
   /* Page CSS (e.g. \`div{color:...}\`) beats :host rules, so font and color are set on every root element inside the shadow tree. */
   .ov,.menu,.pv{font:14px/1.4 "Segoe UI",system-ui,-apple-system,"Helvetica Neue",Roboto,Arial,sans-serif;color:#e8e9f3}
   *{box-sizing:border-box}
+  *::-webkit-scrollbar{width:10px;height:10px}
+  *::-webkit-scrollbar-track,*::-webkit-scrollbar-corner{background:transparent}
+  *::-webkit-scrollbar-button{display:none}
+  *::-webkit-scrollbar-thumb{background:#34376e;border:2px solid transparent;border-radius:6px;background-clip:content-box}
+  *::-webkit-scrollbar-thumb:hover{background:#4a4e9a;background-clip:content-box}
+  @supports not selector(::-webkit-scrollbar){*{scrollbar-width:thin;scrollbar-color:#34376e transparent}}
+  .ov{color-scheme:dark}
   [hidden]{display:none!important}
   .ov{position:fixed;inset:0;z-index:2147483000;background:rgba(5,6,16,.72);display:flex;align-items:center;justify-content:center}
   .win{position:relative;width:min(1320px,95vw);height:min(900px,92vh);background:#0f1022;border:1px solid #2b2d52;border-radius:10px;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden}
