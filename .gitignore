@@ -1,6 +1,11 @@
 node_modules/
 dist/
-.DS_Store
-Thumbs.db
 *.log
 .env
+.DS_Store
+Thumbs.db
+
+# local working notes and editor settings
+.vscode/
+IDEA.md
+PLAN.md
