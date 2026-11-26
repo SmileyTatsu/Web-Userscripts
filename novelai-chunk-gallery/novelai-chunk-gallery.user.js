@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NovelAI Prompt Chunk Gallery
 // @namespace    https://github.com/SmileyTatsu
-// @version      0.3.4
+// @version      0.4.0
 // @description  Replaces the Prompt Chunks popup on novelai.net/image with a searchable thumbnail gallery.
 // @author       SmileyTatsu
 // @homepage     https://github.com/SmileyTatsu/Web-Userscripts/tree/main/novelai-chunk-gallery
@@ -44,6 +44,14 @@
     formCatSel: 'select',
     btn: { save: 'Save', cancel: 'Cancel', del: 'Delete' },
     hotkey: { alt: true, key: 'g' },
+    // The native panel reorders with HTML5 drag-and-drop: the dragged element's dragstart fills the
+    // DataTransfer with these MIME types and the drop target applies the move.
+    macroMime: 'application/x-prompt-chunk-macro',
+    catMime: 'application/x-prompt-chunk-category',
+    // Our own types for dragging inside the gallery. Drag payload values are protected while a drag is
+    // in flight, so the kind lives in the MIME type instead of the data.
+    dragChunkMime: 'application/x-ncg-chunk',
+    dragCatMime: 'application/x-ncg-cat',
   };
 
   /* ───────────────────────── storage (Tampermonkey GM_* with localStorage fallback) ───────────────────────── */
@@ -429,6 +437,116 @@
     });
   }
 
+  /* ───────────────────────── reorder by replaying the native drag-and-drop ───────────────────────── */
+  const fireDrag = (el, type, dt, x = 0, y = 0) =>
+    el.dispatchEvent(
+      new DragEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: dt,
+        clientX: x,
+        clientY: y,
+      }),
+    );
+
+  /*
+   * The native panel reorders with HTML5 drag-and-drop: dragstart on the item writes {id, sourceCategory,
+   * index} for the DataTransfer, dragover/drop on the target applies the move (and saves it on dragend), and
+   * the drop position comes from clientX against the target's mid-point. Replaying one synthetic drag is
+   * therefore enough to move an item, and the site itself computes the indices.
+   */
+  function nativeDrag(from, to, half, refetch) {
+    if (!from || !to || from === to) return false;
+    const dt = new DataTransfer();
+    dt.setDragImage = () => {}; // setDragImage is only meaningful in a real drag session
+    fireDrag(from, 'dragstart', dt);
+    const types = [...dt.types];
+    if (!types.includes(CONFIG.macroMime) && !types.includes(CONFIG.catMime)) return false;
+    const r = to.getBoundingClientRect();
+    // A collapsed category keeps its children in the DOM without a layout box; the native handler then
+    // compares against a zero rect, so any negative x means "before" and any positive x "after".
+    let x = half === 'after' ? 1 : -1;
+    if (r.width) x = half === 'after' ? r.right - 2 : r.left + 2;
+    const y = r.height ? r.top + r.height / 2 : 0;
+    fireDrag(to, 'dragover', dt, x, y);
+    fireDrag(to, 'drop', dt, x, y);
+    // The move can re-render the list and replace the dragged element, and the native handlers save on
+    // dragend, so fall back to a fresh lookup of the same item.
+    const src = from.isConnected ? from : refetch?.();
+    fireDrag(src ?? from, 'dragend', dt);
+    return true;
+  }
+
+  async function readOrder(panel) {
+    await sleep(300); // the site persists the move asynchronously after the drop
+    const sc = await scrape(panel);
+    model = { cats: sc.cats, chunks: reconcile(sc.chunks) };
+    st.set('snapshot', model);
+  }
+
+  /* target: { entry, after } drops next to a chunk, { cat } appends to a category ('' = uncategorized). */
+  function moveChunkNative(source, target) {
+    return queue(async () => {
+      const panel = await openNative();
+      if (!panel) return { ok: false, reason: 'native-panel' };
+      try {
+        const src = (await locate(panel, source)).el;
+        if (!src) return { ok: false, reason: 'not-found' };
+        let to = null;
+        let half = 'after';
+        if (target.cat === undefined) {
+          to = (await locate(panel, target.entry)).el;
+          half = target.after ? 'after' : 'before';
+        } else if (target.cat) {
+          to = headers(panel).find((h) => headerInfo(h).label === target.cat) ?? null;
+        } else {
+          // Uncategorized has no header: appending after its last chunk is the same move.
+          const last = [...model.chunks].reverse().find((c) => !c.cat);
+          if (!last) return { ok: false, reason: 'not-found' };
+          if (last.id === source.id) return { ok: true, reason: '' };
+          to = (await locate(panel, last)).el;
+        }
+        if (!to) return { ok: false, reason: 'not-found' };
+        const retry = () => findChunkEl(panel, source);
+        let ok = nativeDrag(src, to, half, retry);
+        if (!ok) {
+          await sleep(500); // a save in flight disables dragging for a moment
+          ok = nativeDrag(src, to, half, retry);
+        }
+        if (!ok) return { ok: false, reason: 'drag-failed' };
+        await readOrder(panel);
+        return { ok: true, reason: '' };
+      } finally {
+        await closeNative();
+      }
+    });
+  }
+
+  /* Dragging a category onto another moves it to the target's slot, exactly like the native panel. */
+  function moveCatNative(from, to) {
+    return queue(async () => {
+      const panel = await openNative();
+      if (!panel) return { ok: false, reason: 'native-panel' };
+      try {
+        const hs = headers(panel);
+        const src = hs.find((h) => headerInfo(h).label === from);
+        const dst = hs.find((h) => headerInfo(h).label === to);
+        if (!src || !dst) return { ok: false, reason: 'not-found' };
+        const refetch = () => headers(panel).find((h) => headerInfo(h).label === from);
+        let ok = nativeDrag(src, dst, 'before', refetch);
+        if (!ok) {
+          await sleep(500); // a save in flight disables dragging for a moment
+          ok = nativeDrag(src, dst, 'before', refetch);
+        }
+        if (!ok) return { ok: false, reason: 'drag-failed' };
+        await readOrder(panel);
+        return { ok: true, reason: '' };
+      } finally {
+        await closeNative();
+      }
+    });
+  }
+
   /* ───────────────────────── thumbnails ───────────────────────── */
   async function toThumb(blob) {
     const bmp = await createImageBitmap(blob);
@@ -532,7 +650,7 @@
   let host = null,
     root = null,
     ui = null;
-  const state = { q: '', cat: '__all', hoverId: null, open: false, menuFor: null };
+  const state = { q: '', cat: '__all', hoverId: null, open: false, menuFor: null, dragCat: null };
 
   const CSS = `
   :host{all:initial}
@@ -576,12 +694,20 @@
   .side div:hover .ed{display:flex}
   .side div:hover small.n{display:none}
   .side .ed.ib{border-radius:5px}
+  .side div[draggable=true]{cursor:grab}
+  .side div.dragging{opacity:.5}
+  .side div.drop{background:#23265a;color:#fff}
+  .side div.ov-before{box-shadow:inset 0 2px 0 #7a7df0}
+  .side div.ov-after{box-shadow:inset 0 -2px 0 #7a7df0}
   .side hr{border:0;border-top:1px solid #23254a;margin:6px 0}
   .main{flex:1;overflow:auto;padding:12px}
   .grid{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:10px}
   .card{position:relative;background:#15163a;border:1px solid #26285a;border-radius:8px;overflow:hidden;cursor:pointer;min-width:0}
   .card:hover{border-color:#5d60c7}
   .card.drop{outline:2px dashed #7a7df0}
+  .card.dragging{opacity:.45}
+  .card.ov-before{box-shadow:inset 3px 0 0 #7a7df0}
+  .card.ov-after{box-shadow:inset -3px 0 0 #7a7df0}
   .thumb{aspect-ratio:832/1216;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:rgba(255,255,255,.8)}
   .meta{padding:6px 8px;display:flex;flex-direction:column;gap:1px;min-width:0}
   .name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
@@ -648,18 +774,18 @@
       <div class="top">
         <h1>Prompt Chunks</h1>
         <div class="sw">${ic('search', 15)}<input type="search" placeholder="Search name, text or category" id="q"></div>
-        <select id="sort" title="Sort"><option value="native">Native order</option><option value="name">Name A–Z</option><option value="uses">Most used</option></select>
+        <select id="sort" title="Sort (drag to reorder needs Native order)"><option value="native">Native order</option><option value="name">Name A–Z</option><option value="uses">Most used</option></select>
         <div class="cols" id="colsw" title="Cards per row"><input type="range" id="cols" min="2" max="10" step="1"><span id="colsn"></span></div>
         <button class="ib" id="view" title="Grid / list"></button>
         <span class="sep"></span>
         <button class="ib" id="add" title="New chunk">${ic('plus')}</button>
         <button class="ib" id="addcat" title="New category">${ic('folderPlus')}</button>
         <button class="ib" id="rescan" title="Reload chunks from the native panel">${ic('refresh')}</button>
-        <button class="ib" id="native" title="Open the native panel (categories, reorder)">${ic('ext')}</button>
+        <button class="ib" id="native" title="Open the native panel">${ic('ext')}</button>
         <button class="ib" id="close" title="Close (Esc)">${ic('x')}</button>
       </div>
       <div class="body"><div class="side" id="side"></div><div class="main" id="main"></div></div>
-      <div class="hint">Click a card to copy its text · hover for Edit, Favorite and More (Insert into prompt lives in More; Shift keeps this open) · hover + Ctrl+V or drop an image to set a thumbnail · Alt+G toggles</div>
+      <div class="hint">Click a card to copy its text · hover for Edit, Favorite and More (Insert into prompt lives in More; Shift keeps this open) · hover + Ctrl+V or drop an image to set a thumbnail · drag cards (or a sidebar category) to reorder in Native order · Alt+G toggles</div>
       <div class="toast" id="toast"></div>
       <div class="dlgbg" id="dlgbg" hidden></div>
     </div></div><div class="pv" id="pv" hidden></div><div class="menu" id="menu" hidden></div>`;
@@ -773,31 +899,128 @@
   const initials = (l) => (l.match(/[\p{L}\p{N}]/gu) || ['?']).slice(0, 2).join('').toUpperCase();
   const flat = (color) => `color-mix(in srgb, ${color} 45%, #15163a)`;
 
+  /* reordering inside the gallery: our own drag types, replayed on the native panel by moveChunkNative/moveCatNative */
+  const dragKind = (dt) => {
+    if (!dt) return null;
+    const types = [...dt.types];
+    if (types.includes(CONFIG.dragChunkMime)) return 'chunk';
+    if (types.includes(CONFIG.dragCatMime)) return 'cat';
+    return null;
+  };
+  const catIndex = (label) => model.cats.findIndex((c) => c.label === label);
+
+  async function moveChunkTo(id, target) {
+    const src = model.chunks.find((c) => c.id === id);
+    if (!src || src.cat === '__official') return;
+    ui.win.classList.add('busy');
+    const r = await moveChunkNative(src, target);
+    ui.win.classList.remove('busy');
+    render();
+    toast(r.ok ? `Moved “${src.label}”` : failMsg(r.reason));
+  }
+
+  async function moveChunkIntoCat(id, cat) {
+    const src = model.chunks.find((c) => c.id === id);
+    if (!src || src.cat === '__official') return;
+    if (src.cat === cat) {
+      const same = model.chunks.filter((c) => c.cat === cat);
+      if (same[same.length - 1]?.id === id) return toast('Already last in that category.');
+    }
+    await moveChunkTo(id, { cat });
+  }
+
+  async function moveCatTo(from, to) {
+    ui.win.classList.add('busy');
+    const r = await moveCatNative(from, to);
+    ui.win.classList.remove('busy');
+    render();
+    toast(r.ok ? 'Category moved.' : failMsg(r.reason));
+  }
+
+  /* kind: 'cat' = a real category (draggable + drop target), 'drop' = drop target only, '' = plain row */
+  function wireSideRow(el, key, kind) {
+    el.onclick = () => {
+      state.cat = key;
+      render();
+    };
+    if (kind === 'cat') {
+      el.ondragstart = (e) => {
+        e.dataTransfer.setData(CONFIG.dragCatMime, key);
+        e.dataTransfer.effectAllowed = 'move';
+        el.classList.add('dragging');
+        state.dragCat = key;
+      };
+      el.ondragend = () => {
+        el.classList.remove('dragging');
+        state.dragCat = null;
+        ui.side
+          .querySelectorAll('.ov-before,.ov-after,.drop')
+          .forEach((r) => r.classList.remove('ov-before', 'ov-after', 'drop'));
+      };
+    }
+    if (!kind) return;
+    el.ondragover = (e) => {
+      const what = dragKind(e.dataTransfer);
+      if (!what || (what === 'cat' && kind !== 'cat')) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (what === 'chunk') el.classList.add('drop');
+      // the native panel moves the dragged category to the hovered row's slot, so the marker shows where it lands
+      const s = catIndex(state.dragCat);
+      const r = catIndex(key);
+      el.classList.toggle('ov-after', s >= 0 && r >= 0 && s < r);
+      el.classList.toggle('ov-before', s >= 0 && r >= 0 && s > r);
+    };
+    el.ondragleave = () => el.classList.remove('drop', 'ov-before', 'ov-after');
+    el.ondrop = (e) => {
+      e.preventDefault();
+      el.classList.remove('drop', 'ov-before', 'ov-after');
+      const what = dragKind(e.dataTransfer);
+      if (what === 'cat') {
+        const from = e.dataTransfer.getData(CONFIG.dragCatMime);
+        if (from && from !== key) moveCatTo(from, key);
+      } else if (what === 'chunk') {
+        const id = e.dataTransfer.getData(CONFIG.dragChunkMime);
+        if (id) moveChunkIntoCat(id, key === '__none' ? '' : key);
+      }
+    };
+  }
+
   function renderSide() {
     const ch = model.chunks;
     const n = (f) => ch.filter(f).length;
-    const row = (key, label, count, editable) =>
-      `<div data-k="${esc(key)}" class="${state.cat === key ? 'sel' : ''}"><span>${esc(label)}</span><small class="n">${count}</small>${editable ? `<button class="ib ed" data-ec="${esc(key)}" title="Edit category">${ic('pencil', 13)}</button>` : ''}</div>`;
-    let h =
-      row('__all', 'All', ch.length) +
-      row(
-        '__fav',
-        'Favorites',
-        n((c) => store.entries[c.id]?.fav),
-      );
+    const row = (key, label, count, kind) =>
+      `<div data-k="${esc(key)}"${kind === 'cat' ? ' draggable="true"' : ''} class="${state.cat === key ? 'sel' : ''}"><span>${esc(label)}</span><small class="n">${count}</small>${
+        kind === 'cat'
+          ? `<button class="ib ed" data-ec="${esc(key)}" title="Edit category">${ic('pencil', 13)}</button>`
+          : ''
+      }</div>`;
+    const kinds = new Map();
+    let h = '';
+    const add = (key, label, count, kind = '') => {
+      kinds.set(key, kind);
+      h += row(key, label, count, kind);
+    };
+    add('__all', 'All', ch.length);
+    add(
+      '__fav',
+      'Favorites',
+      n((c) => store.entries[c.id]?.fav),
+    );
     h += '<hr>';
     if (n((c) => !c.cat))
-      h += row(
+      add(
         '__none',
         'Uncategorized',
         n((c) => !c.cat),
+        'drop',
       );
     for (const c of model.cats)
-      h += row(
+      add(
         c.label,
         c.label,
         n((x) => x.cat === c.label),
-        true,
+        'cat',
       );
     if (n((c) => c.cat === '__official'))
       h += `<hr>${row(
@@ -806,13 +1029,8 @@
         n((c) => c.cat === '__official'),
       )}`;
     ui.side.innerHTML = h;
-    ui.side.querySelectorAll('[data-k]').forEach(
-      (el) =>
-        (el.onclick = () => {
-          state.cat = el.dataset.k;
-          render();
-        }),
-    );
+    for (const el of ui.side.querySelectorAll('[data-k]'))
+      wireSideRow(el, el.dataset.k, kinds.get(el.dataset.k) || '');
     ui.side.querySelectorAll('[data-ec]').forEach(
       (b) =>
         (b.onclick = (e) => {
@@ -857,8 +1075,10 @@
       })
       .join('')}</div>`;
     const byId = new Map(list.map((x) => [x.id, x]));
+    const reorderable = prefs.sort === 'native'; // other sorts would hide the move
     ui.main.querySelectorAll('.card').forEach((card) => {
       const x = byId.get(card.dataset.id);
+      const movable = reorderable && x.cat !== '__official' && !!x.id;
       card.onclick = (e) => {
         const b = e.target.closest('[data-a]');
         if (b) {
@@ -875,14 +1095,50 @@
         if (state.hoverId === x.id) state.hoverId = null;
         hidePreview();
       };
+      const half = (e) => {
+        const r = card.getBoundingClientRect();
+        return e.clientX > r.left + r.width / 2 ? 'after' : 'before';
+      };
+      if (movable) {
+        card.draggable = true;
+        card.ondragstart = (e) => {
+          e.dataTransfer.setData(CONFIG.dragChunkMime, x.id);
+          e.dataTransfer.effectAllowed = 'move';
+          card.classList.add('dragging');
+          hidePreview();
+        };
+        card.ondragend = () => {
+          card.classList.remove('dragging');
+          // a drag can end anywhere; no dragleave fires for the card that was last hovered
+          ui.main
+            .querySelectorAll('.ov-before,.ov-after')
+            .forEach((el) => el.classList.remove('ov-before', 'ov-after'));
+          ui.side
+            .querySelectorAll('.drop,.ov-before,.ov-after,.dragging')
+            .forEach((el) => el.classList.remove('drop', 'ov-before', 'ov-after', 'dragging'));
+          state.dragCat = null;
+        };
+      }
       card.ondragover = (e) => {
         e.preventDefault();
-        card.classList.add('drop');
+        const kind = dragKind(e.dataTransfer);
+        if (kind !== 'chunk') return card.classList.add('drop'); // image drop
+        const side = half(e);
+        card.classList.toggle('ov-after', side === 'after');
+        card.classList.toggle('ov-before', side === 'before');
       };
-      card.ondragleave = () => card.classList.remove('drop');
+      card.ondragleave = () => card.classList.remove('drop', 'ov-before', 'ov-after');
       card.ondrop = (e) => {
         e.preventDefault();
-        card.classList.remove('drop');
+        const side = half(e);
+        card.classList.remove('drop', 'ov-before', 'ov-after');
+        const kind = dragKind(e.dataTransfer);
+        if (kind === 'cat') return; // a category has no meaning on a card
+        const id = kind === 'chunk' ? e.dataTransfer.getData(CONFIG.dragChunkMime) : '';
+        if (id) {
+          if (id !== x.id) moveChunkTo(id, { entry: x, after: side === 'after' });
+          return;
+        }
         onDrop(e, x);
       };
     });
@@ -1253,6 +1509,7 @@
       'no-button': 'Could not find the native Save/Delete button.',
       'form-rejected': 'The native form did not accept the values.',
       'save-failed': 'The native form did not confirm the save.',
+      'drag-failed': 'The native panel did not accept the drag.',
     };
     return msgs[r] || 'Failed.';
   }

@@ -5,6 +5,91 @@
     font-family: 'Times New Roman', serif;
   }
 </style>
+<style>
+  #promptChunkContainer {
+    position: absolute;
+    top: 130px;
+    left: 320px;
+    width: 460px;
+    padding: 8px;
+    background: #1b1d2a;
+    border: 1px solid #444;
+    z-index: 10;
+  }
+  .sc-7d061733-0,
+  .sc-7d061733-1 {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .sc-3b02d579-0,
+  .sc-7d061733-23,
+  .sc-7d061733-24,
+  .sc-7d061733-25 {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .sc-7d061733-23 {
+    justify-content: space-between;
+  }
+  .sc-7d061733-25 {
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: grab;
+    border: 1px solid #555;
+  }
+  .sc-7d061733-26 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-left: 16px;
+    margin-top: 6px;
+    min-height: 28px;
+  }
+  .sc-7d061733-27 {
+    display: flex;
+    flex-direction: column;
+  }
+  .sc-7d061733-30 {
+    position: relative;
+    display: inline-flex;
+  }
+  .sc-7d061733-31 {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    min-height: 28px;
+    border: 2px dashed #333;
+    border-radius: 4px;
+    flex: 1 0 0;
+  }
+  .sc-7d061733-4,
+  .sc-7d061733-5 {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    cursor: grab;
+  }
+  [data-over] {
+    outline: 2px dashed #9f9;
+  }
+  [data-over='left'] {
+    box-shadow: inset 3px 0 0 #9f9;
+  }
+  [data-over='right'] {
+    box-shadow: inset -3px 0 0 #9f9;
+  }
+  #mockform label,
+  #mockcatform label {
+    display: block;
+    font-size: 12px;
+  }
+</style>
 <body style="background: #222; color: #ddd; font-family: sans-serif">
   <div style="padding: 20px">
     <button id="tbbtn" style="padding: 8px">
@@ -20,267 +105,537 @@
     >
       prompt:
     </div>
-    <img id="gen" width="320" height="400" src="" />
     <div id="toasts"></div>
   </div>
   <script>
-    const PANEL =
-      '<div id="promptChunkContainer" data-popper-reference-hidden="false" data-popper-escaped="true" data-popper-placement="right-start" class="sc-5371c89c-1 dmPIpI" style="position: absolute; inset: 0px auto auto 0px; transform: translate(412px, 183px);"><div class="sc-3b02d579-0 fCjzzh"><div class="sc-d29c49cf-0 elFbld" style="cursor: pointer;">Prompt Chunks</div><div class="sc-d29c49cf-0 hjDkOc" style="cursor: pointer;">Settings</div></div><div class="sc-7d061733-0 fqZsGH"><div class="sc-7d061733-23 kwOXSf"><span class="sc-7d061733-2 jxlibF">Prompt Chunks</span><div class="sc-7d061733-24 dpWrhR"><button title="Add Category" class="sc-7b42663-2 dWYLjn" style="padding: 6px; display: flex; align-items: center; justify-content: center; font-size: 20px;"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path><line x1="12" x2="12" y1="10" y2="16"></line><line x1="9" x2="15" y1="13" y2="13"></line></svg></button><button title="Add Prompt Chunk" class="sc-7b42663-2 dWYLjn" style="padding: 6px;"><div class="sc-3fbd69ac-1 sc-3fbd69ac-31 iZWGWf cmGVMD" style="height: 14px; width: 14px;"></div></button><button class="sc-7b42663-2 dWYLjn" style="padding: 6px;"><div class="sc-3fbd69ac-1 sc-3fbd69ac-26 iZWGWf gJLiDF" style="height: 14px; width: 14px;"></div></button></div></div><div class="sc-7d061733-1 jhlSyG"><div class="sc-7d061733-3 ejliLm"><div class="sc-7d061733-31 hZQNzA"></div></div><div class="sc-7d061733-27 jceqyz"><div draggable="true" color="#6B7280" class="sc-7d061733-25 joNVoI"><span class="sc-7d061733-28 dUrBch"><div class="sc-3fbd69ac-1 sc-3fbd69ac-8 iZWGWf ggXWaQ" style="height: 1em; width: 1em;"></div></span><span style="flex: 1 1 0%;">Characters</span><span style="font-size: 0.75rem; opacity: 0.6;">8</span><button title="Edit Category" class="sc-7d061733-6 exWFTQ">\u270e</button></div><div class="sc-7d061733-26 dCsPrf"><div class="sc-7d061733-30 cyEZwx"><div class="sc-7d061733-29 kPgOiw"></div><div draggable="true" color="#5a8fdc" title="1::hadou nejire, hadou nejire, blue hair, long hair, blue eyes, huge breasts::, perky breasts, sagging breasts, 0.8::plump::,\n\nClick to insert, drag to reorder" class="sc-7d061733-4 sc-7d061733-5 blmQDa gOqbYB"><span>Nejire Prompt</span><button title="Edit Chunk" class="sc-7d061733-6 exWFTQ">\u270e</button></div><div class="sc-7d061733-29 eJMBPP"></div></div><div class="sc-7d061733-30 cyEZwx"><div class="sc-7d061733-29 kPgOiw"></div><div draggable="true" color="#c967f2" title="1::mina ahido, ashido mina, pink hair, pink skin, short hair, yellow eyes, black sclera, medium breasts::, perky breasts,\n\nClick to insert, drag to reorder" class="sc-7d061733-4 sc-7d061733-5 ghxhqu gOqbYB"><span>Mina prompt</span><button title="Edit Chunk" class="sc-7d061733-6 exWFTQ">\u270e</button></div><div class="sc-7d061733-29 eJMBPP"></div></div><div class="sc-7d061733-30 cyEZwx"><div class="sc-7d061733-29 kPgOiw"></div><div draggable="true" color="#a67926" title="girl, 1::yaoyorozu momo, black hair, ponytail, huge breasts::, perky breasts, sagging breasts,\n\nClick to insert, drag to reorder" class="sc-7d061733-4 sc-7d061733-5 ciFXkS gOqbYB"><span>Yaoyorozu</span><button title="Edit Chunk" class="sc-7d061733-6 exWFTQ">\u270e</button></div><div class="sc-7d061733-29 eJMBPP"></div></div><div class="sc-7d061733-30 cyEZwx"><div class="sc-7d061733-29 kPgOiw"></div><div draggable="true" color="#72ff7d" title="girl, 1::asui tsuyu, green hair, black eyes, rabbit girl, medium breasts, long mouth::, perky breasts, sagging breasts,\n\nClick to insert, drag to reorder" class="sc-7d061733-4 sc-7d061733-5 ieSagm gOqbYB"><span>Tsuyu</span><button title="Edit Chunk" class="sc-7d061733-6 exWFTQ">\u270e</button></div><div class="sc-7d061733-29 eJMBPP"></div></div><div class="sc-7d061733-30 cyEZwx"><div class="sc-7d061733-29 kPgOiw"></div><div draggable="true" color="#e6abff" title="girl, 1::jiro kyoka, short hair, purple hair, purple eyes, flat chest, petite::, perky breasts,\n\nClick to insert, drag to reorder" class="sc-7d061733-4 sc-7d061733-5 FkPq gOqbYB"><span>Jirou</span><button title="Edit Chunk" class="sc-7d061733-6 exWFTQ">\u270e</button></div><div class="sc-7d061733-29 eJMBPP"></div></div><div class="sc-7d061733-30 cyEZwx"><div class="sc-7d061733-29 kPgOiw"></div><div draggable="true" color="#ffbb84" title="girl, 1::uraraka ochaco, brown hair, short hair, chubby, brown eyes, blush stickers, large breasts::, perky breasts, sagging breasts,\n\nClick to insert, drag to reorder" class="sc-7d061733-4 sc-7d061733-5 bIAfUC gOqbYB"><span>Ochako</span><button title="Edit Chunk" class="sc-7d061733-6 exWFTQ">\u270e</button></div><div class="sc-7d061733-29 eJMBPP"></div></div><div class="sc-7d061733-30 cyEZwx"><div class="sc-7d061733-29 kPgOiw"></div><div draggable="true" color="#fa00ff" title="boy, 1::astolfo (fate), pink hair, braided ponytale, pink eyes, petite, flat chest, toned::,\n\nClick to insert, drag to reorder" class="sc-7d061733-4 sc-7d061733-5 jLREye gOqbYB"><span>Astolfo</span><button title="Edit Chunk" class="sc-7d061733-6 exWFTQ">\u270e</button></div><div class="sc-7d061733-29 eJMBPP"></div></div><div class="sc-7d061733-30 cyEZwx"><div class="sc-7d061733-29 kPgOiw"></div><div draggable="true" color="#97711f" title="girl,  1::komori kinoko, brown hair, medium hair, chubby, large breasts::, perky breasts, 0.5::sagging breasts::, 0.8::plump::,\n\nClick to insert, drag to reorder" class="sc-7d061733-4 sc-7d061733-5 fSAfTq gOqbYB"><span>Komori Kinoko</span><button title="Edit Chunk" class="sc-7d061733-6 exWFTQ">\u270e</button></div><div class="sc-7d061733-29 eJMBPP"></div></div><div class="sc-7d061733-31 hZQNzA"></div></div></div><div class="sc-7d061733-27 jceqyz"><div draggable="true" color="#6B7280" class="sc-7d061733-25 joNVoI"><span class="sc-7d061733-28 dUrBch"><div class="sc-3fbd69ac-1 sc-3fbd69ac-8 iZWGWf ggXWaQ" style="height: 1em; width: 1em;"></div></span><span style="flex: 1 1 0%;">Styles</span><span style="font-size: 0.75rem; opacity: 0.6;">5</span><button title="Edit Category" class="sc-7d061733-6 exWFTQ">\u270e</button></div><div class="sc-7d061733-26 dCsPrf"><div class="sc-7d061733-30 cyEZwx"><div class="sc-7d061733-29 kPgOiw"></div><div draggable="true" color="#9153c7" title="artist:eigaka, Drawn in the highly finished style of krekkov, [riz], [[artist:phantom ix row]], {artist:try (lsc)}, artist:sorapoi, artist:blackwhiplash,\n\nClick to insert, drag to reorder" class="sc-7d061733-4 sc-7d061733-5 fldcRO gOqbYB"><span>Squishy Style</span><button title="Edit Chunk" class="sc-7d061733-6 exWFTQ">\u270e</button></div><div class="sc-7d061733-29 eJMBPP"></div></div><div class="sc-7d061733-30 cyEZwx"><div class="sc-7d061733-29 kPgOiw"></div><div draggable="true" color="#0055ff" title="2::metal_owl_(aden12),::1::doppel_(bonnypir),::1::wirberlwind,riz,watercolor (medium),oil painting (medium),3::no lineart::,\n\nClick to insert, drag to reorder" class="sc-7d061733-4 sc-7d061733-5 kgcaRi gOqbYB"><span>Twitter Style</span><button title="Edit Chunk" class="sc-7d061733-6 exWFTQ">\u270e</button></div><div class="sc-7d061733-29 eJMBPP"></div></div><div class="sc-7d061733-30 cyEZwx"><div class="sc-7d061733-29 kPgOiw"></div><div draggable="true" color="#fff100" title="2::yellow background, solid colors::, minimalism, vector art, high contrast, thick black silhouette figure with glowing yellow contours, humanoid figures with circular heads,\n\nsolid black body fill,  faceless, no details, no shading, solid black head, mitten-like hands, curved rounded stump feet,\n\n1.5::textures, yellow contours, yellow details on articulations::, -2::cyborg, gradient, shading::,\n\nClick to insert, drag to reorder" class="sc-7d061733-4 sc-7d061733-5 kyJDeK gOqbYB"><span>Solid figures style (BREAKING)</span><button title="Edit Chunk" class="sc-7d061733-6 exWFTQ">\u270e</button></div><div class="sc-7d061733-29 eJMBPP"></div></div><div class="sc-7d061733-30 cyEZwx"><div class="sc-7d061733-29 kPgOiw"></div><div draggable="true" color="#3679ff" title="artist:ratatatat74, 0.75::artist:krekkov::, 0.5::artist:riz::, 1.1::artist:blackwhiplash::, 1.5::artist:eigaka::, 0.65::artist:afrobull::,\n\nClick to insert, drag to reorder" class="sc-7d061733-4 sc-7d061733-5 bPCBee gOqbYB"><span>New Twitter</span><button title="Edit Chunk" class="sc-7d061733-6 exWFTQ">\u270e</button></div><div class="sc-7d061733-29 eJMBPP"></div></div><div class="sc-7d061733-30 cyEZwx"><div class="sc-7d061733-29 kPgOiw"></div><div draggable="true" color="#e6c5ff" title="depthness, year 2026 , year 2025,\n2::artist:doppel (bonnypir)::, 1.2::gerph::, 0.6::artist:picturd::, 0.8::artist:taiger::, artist:eigaka, artist:picturd,\n\nClick to insert, drag to reorder" class="sc-7d061733-4 sc-7d061733-5 YUfCe gOqbYB"><span>v5 Twitter Style</span><button title="Edit Chunk" class="sc-7d061733-6 exWFTQ">\u270e</button></div><div class="sc-7d061733-29 eJMBPP"></div></div><div class="sc-7d061733-31 hZQNzA"></div></div></div><div class="sc-7d061733-27 jceqyz"><div draggable="true" color="#6B7280" class="sc-7d061733-25 joNVoI"><span class="sc-7d061733-28 dUrBch"><div class="sc-3fbd69ac-1 sc-3fbd69ac-8 iZWGWf ggXWaQ" style="height: 1em; width: 1em;"></div></span><span style="flex: 1 1 0%;">Clothing</span><span style="font-size: 0.75rem; opacity: 0.6;">1</span><button title="Edit Category" class="sc-7d061733-6 exWFTQ">\u270e</button></div><div class="sc-7d061733-26 dCsPrf"><div class="sc-7d061733-30 cyEZwx"><div class="sc-7d061733-29 kPgOiw"></div><div draggable="true" color="#6B7280" title="u.a. school uniform, white shirt, grey jacket, red necktie, green skirt,\n\nClick to insert, drag to reorder" class="sc-7d061733-4 sc-7d061733-5 cuPeoS gOqbYB"><span>U.A. School Uniform</span><button title="Edit Chunk" class="sc-7d061733-6 exWFTQ">\u270e</button></div><div class="sc-7d061733-29 eJMBPP"></div></div><div class="sc-7d061733-31 hZQNzA"></div></div></div></div><div style="flex: 1 1 0px;"></div><button class="sc-7b42663-0 sc-7b42663-1 sc-363c318a-6 efWWnU dtNttg  button undefined button" style="width: unset;">Delete All</button></div></div>';
-    const c = document.createElement('canvas');
-    c.width = 320;
-    c.height = 400;
-    const g = c.getContext('2d');
-    g.fillStyle = '#a33';
-    g.fillRect(0, 0, 320, 400);
-    g.fillStyle = '#3a3';
-    g.fillRect(40, 60, 200, 200);
-    document.getElementById('gen').src = c.toDataURL();
+    /* Mock of the native Prompt Chunks panel.
+       The data model and the drag-and-drop follow the site bundle: chunks and categories carry an order
+       array, dragstart writes {id, sourceCategory, index} under a custom MIME type, dragover picks a side
+       from clientX and drop inserts at that index. A collapsed category keeps its children in the DOM
+       (display:none), like the real component. */
+    const MIME_MACRO = 'application/x-prompt-chunk-macro';
+    const MIME_CAT = 'application/x-prompt-chunk-category';
+
+    window.mockLog = [];
+    const log = (s) => window.mockLog.push(s);
+    const panel = () => document.getElementById('promptChunkContainer');
+    const toast = (t) => {
+      document.getElementById('toasts').textContent = t;
+    };
+
+    let seq = 0;
+    const newId = () => 'c' + ++seq;
+    const chunks = new Map();
+    let cats = [];
+    const rootOrder = [];
+    let ctx = null;
+
+    const official = [
+      {
+        id: 'o1',
+        label: 'Quality Tags',
+        expansion: 'best quality, amazing quality, very aesthetic, absurdres',
+      },
+      { id: 'o2', label: 'Bad Anatomy', expansion: 'bad anatomy, bad hands, extra digits' },
+    ];
+
+    const cat = (label, color, collapsed = false) => ({
+      id: `k${++seq}`,
+      label,
+      color,
+      collapsed,
+      childOrder: [],
+    });
+    function addChunk(target, label, expansion, color) {
+      const id = newId();
+      chunks.set(id, { id, label, expansion, color });
+      (target ? target.childOrder : rootOrder).push(id);
+      return id;
+    }
+    const characters = cat('Characters', '#6B7280');
+    const styles = cat('Styles', '#6a9edd');
+    const positions = cat('Positions', '#44ff00', true);
+    const parts = cat('Body Parts', '#72ff7d');
+    cats.push(characters, styles, positions, parts);
+    addChunk(
+      characters,
+      'Nejire Prompt',
+      '1::hadou nejire, blue hair, long hair::, perky breasts',
+      '#5a8fdc',
+    );
+    addChunk(characters, 'Mina prompt', '1::mina ahido, pink hair, pink skin::', '#c967f2');
+    addChunk(characters, 'Tsuyu', 'girl, 1::asui tsuyu, green hair::', '#72ff7d');
+    addChunk(styles, 'Squishy Style', 'artist:eigaka, artist:krekkov', '#9153c7');
+    addChunk(styles, 'Twitter Style', '2::yellow background, solid colors::', '#fff100');
+    addChunk(positions, 'Glory Wall', 'glory wall, breast focus', '#567adc');
+    addChunk(positions, 'Folded', 'folded, knees to chest', '#de7b5d');
+    addChunk(null, 'Loose chunk', 'some uncategorised tags', '#d95454');
+
+    const esc = (s) =>
+      String(s).replace(
+        /[&<>"]/g,
+        (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch],
+      );
+    const bodyOf = (el) => {
+      const b = el.closest('[data-body]')?.dataset.body;
+      return !b || b === 'root' ? null : b;
+    };
+    const orderOf = (catId) => {
+      if (!catId) return rootOrder;
+      const c = cats.find((x) => x.id === catId);
+      return c ? c.childOrder : [];
+    };
+
+    function save() {
+      log('save');
+      localStorage.setItem(
+        'mock:order',
+        JSON.stringify({ cats: cats.map((c) => [c.label, c.childOrder]), root: rootOrder }),
+      );
+    }
+
+    function chunkEl(id) {
+      const c = chunks.get(id);
+      return `<div class="sc-7d061733-30 cyEZwx"><div class="sc-7d061733-29 kPgOiw"></div><div draggable="true" color="${c.color}" data-chunk="${id}" title="${esc(c.expansion)}
+
+Click to insert, drag to reorder" class="sc-7d061733-4 sc-7d061733-5 blmQDa gOqbYB"><span>${esc(c.label)}</span><button title="Edit Chunk" class="sc-7d061733-6 exWFTQ">✎</button></div><div class="sc-7d061733-29 eJMBPP"></div></div>`;
+    }
+
+    function officialEl(o) {
+      return `<div color="#6B7280" data-chunk="${o.id}" title="${esc(o.expansion)}
+
+Click to insert" class="sc-7d061733-4"><span>${esc(o.label)}</span></div>`;
+    }
+
+    function catEl(c) {
+      const empty = c.childOrder.length
+        ? ''
+        : '<span style="font-size: 0.75rem; opacity: 0.5; font-style: italic;">Empty category</span>';
+      return `<div class="sc-7d061733-27 jceqyz">
+      <div draggable="true" color="${c.color}" data-header="${c.id}" class="sc-7d061733-25 joNVoI"><span class="sc-7d061733-28 dUrBch"><div class="sc-3fbd69ac-1 iZWGWf">${c.collapsed ? '▸' : '▾'}</div></span><span style="flex: 1 1 0%;">${esc(c.label)}</span><span style="font-size: 0.75rem; opacity: 0.6;">${c.childOrder.length}</span><button title="Edit Category" class="sc-7d061733-6 exWFTQ">✎</button></div>
+      <div class="sc-7d061733-26 dCsPrf" data-body="${c.id}" style="display: ${c.collapsed ? 'none' : 'flex'}">${c.childOrder
+        .map(chunkEl)
+        .join(
+          '',
+        )}<div class="sc-7d061733-31 hZQNzA" data-dropzone="${c.id}"></div>${empty}</div></div>`;
+    }
+
+    function renderPanel() {
+      const p = panel();
+      if (!p) return;
+      p.innerHTML = `<div class="sc-3b02d579-0 fCjzzh"><div class="sc-d29c49cf-0 elFbld" style="cursor: pointer;">Prompt Chunks</div><div class="sc-d29c49cf-0 hjDkOc" style="cursor: pointer;">Settings</div></div>
+      <div class="sc-7d061733-0 fqZsGH">
+        <div class="sc-7d061733-23 kwOXSf"><span class="sc-7d061733-2 jxlibF">Prompt Chunks</span><div class="sc-7d061733-24 dpWrhR"><button title="Add Category" class="sc-7b42663-2 dWYLjn" style="padding: 6px;">+</button><button title="Add Prompt Chunk" class="sc-7b42663-2 dWYLjn" style="padding: 6px;">+c</button></div></div>
+        <div class="sc-7d061733-1 jhlSyG">
+          <div class="sc-7d061733-3 ejliLm"><span style="font-size: 0.8rem; opacity: 0.6;">Official</span><div>${official
+            .map(officialEl)
+            .join('')}</div></div>
+          <div class="sc-7d061733-3 ejliLm" data-body="root">${rootOrder
+            .map(chunkEl)
+            .join('')}<div class="sc-7d061733-31 hZQNzA" data-dropzone="root"></div></div>
+          ${cats.map(catEl).join('')}
+          <div style="flex: 1 1 0px;"></div>
+          <button class="sc-7b42663-0 sc-7b42663-1" style="width: unset;">Delete All</button>
+        </div>
+      </div>`;
+    }
+
+    function onMove(id, sourceCat, targetCat, index) {
+      const src = orderOf(sourceCat);
+      const dst = orderOf(targetCat);
+      const si = src.indexOf(id);
+      if (si >= 0) src.splice(si, 1);
+      dst.splice(Math.min(index, dst.length), 0, id);
+      log(`move:${id}:${sourceCat}:${targetCat}:${index}`);
+      save();
+      renderPanel();
+    }
+
+    function moveCat(from, to) {
+      const [c] = cats.splice(from, 1);
+      cats.splice(to, 0, c);
+      log(`movecat:${from}:${to}`);
+      save();
+      renderPanel();
+    }
+
+    function clearOver() {
+      for (const el of panel().querySelectorAll('[data-over]')) delete el.dataset.over;
+    }
+
+    let expandT = null;
+    function onDragStart(e) {
+      clearTimeout(expandT);
+      expandT = null;
+      const ch = e.target.closest('[data-chunk]');
+      if (ch) {
+        if (!ch.hasAttribute('draggable')) {
+          e.preventDefault();
+          return;
+        }
+        const id = ch.dataset.chunk;
+        const catId = bodyOf(ch);
+        const index = orderOf(catId).indexOf(id);
+        e.dataTransfer.setData('text/plain', id);
+        e.dataTransfer.setData(MIME_MACRO, JSON.stringify({ id, sourceCategory: catId, index }));
+        e.dataTransfer.effectAllowed = 'copyMove';
+        e.dataTransfer.setDragImage(new Image(), 0, 0);
+        ctx = { type: 'macro', id, sourceCategory: catId, index };
+        return;
+      }
+      const h = e.target.closest('[data-header]');
+      if (!h) return;
+      const index = cats.findIndex((c) => c.id === h.dataset.header);
+      e.dataTransfer.setData(MIME_CAT, JSON.stringify({ id: h.dataset.header, index }));
+      e.dataTransfer.effectAllowed = 'copyMove';
+      e.dataTransfer.setDragImage(new Image(), 0, 0);
+      ctx = { type: 'category', id: h.dataset.header, sourceCategory: null, index };
+    }
+
+    function onDragOver(e) {
+      const types = [...e.dataTransfer.types];
+      const ch = e.target.closest('[data-chunk]');
+      const h = e.target.closest('[data-header]');
+      const dz = e.target.closest('[data-dropzone]');
+      if (types.includes(MIME_MACRO)) {
+        if (ch) {
+          if (ctx?.id === ch.dataset.chunk) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          clearOver();
+          const r = ch.getBoundingClientRect();
+          ch.dataset.over = e.clientX < r.left + r.width / 2 ? 'left' : 'right';
+          return;
+        }
+        if (h) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          h.dataset.over = '1';
+          const c = cats.find((x) => x.id === h.dataset.header);
+          if (c?.collapsed && !expandT)
+            expandT = setTimeout(() => {
+              c.collapsed = false;
+              expandT = null;
+              renderPanel();
+            }, 500);
+          return;
+        }
+        if (dz) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          dz.dataset.over = '1';
+        }
+        return;
+      }
+      if (!types.includes(MIME_CAT) || !h) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const index = cats.findIndex((c) => c.id === h.dataset.header);
+      if (!ctx || ctx.id === h.dataset.header) return;
+      if (ctx.index !== index) {
+        moveCat(ctx.index, index);
+        ctx.index = index;
+      }
+    }
+
+    function onDragLeave(e) {
+      const el = e.target.closest('[data-over]');
+      if (el && !el.contains(e.relatedTarget)) delete el.dataset.over;
+    }
+
+    function onDrop(e) {
+      const macro = e.dataTransfer.getData(MIME_MACRO);
+      if (!macro) return;
+      e.preventDefault();
+      clearOver();
+      const { id, sourceCategory, index: s } = JSON.parse(macro);
+      const ch = e.target.closest('[data-chunk]');
+      const h = e.target.closest('[data-header]');
+      const dz = e.target.closest('[data-dropzone]');
+      if (ch) {
+        const targetId = ch.dataset.chunk;
+        if (targetId === id) return;
+        const catId = bodyOf(ch);
+        const index = orderOf(catId).indexOf(targetId);
+        const r = ch.getBoundingClientRect();
+        const before = e.clientX < r.left + r.width / 2;
+        let d;
+        if (before) d = sourceCategory === catId && s < index ? index - 1 : index;
+        else d = sourceCategory === catId && s < index ? index : index + 1;
+        onMove(id, sourceCategory, catId, d);
+        return;
+      }
+      if (h) {
+        onMove(id, sourceCategory, h.dataset.header, orderOf(h.dataset.header).length);
+        return;
+      }
+      if (dz) {
+        const catId = dz.dataset.dropzone === 'root' ? null : dz.dataset.dropzone;
+        onMove(id, sourceCategory, catId, orderOf(catId).length);
+      }
+    }
+
+    function onDragEnd() {
+      clearOver();
+      clearTimeout(expandT);
+      expandT = null;
+      ctx = null;
+      save();
+    }
+
+    /* ── click / insert / collapse ── */
     let hasEditor = false;
     const ed = document.getElementById('editor');
-    ed.addEventListener('focus', () => (hasEditor = true));
-    window.clicks = [];
-    function stash(h) {
-      if (!h.nextElementSibling.dataset.s) {
-        h.nextElementSibling.dataset.s = h.nextElementSibling.innerHTML;
-        h.nextElementSibling.innerHTML = '';
-      } else {
-        h.nextElementSibling.innerHTML = h.nextElementSibling.dataset.s;
-        delete h.nextElementSibling.dataset.s;
+    ed.addEventListener('focus', () => {
+      hasEditor = true;
+    });
+
+    function insert(id) {
+      const c = chunks.get(id) || official.find((o) => o.id === id);
+      if (!hasEditor) {
+        toast('Click in a prompt field first, then click a chunk to insert it.');
+        return;
       }
-    }
-    let firstOpen = true;
-    window.savedHTML = null;
-    function openPanel() {
-      document.body.insertAdjacentHTML('beforeend', window.savedHTML || PANEL);
-      const p = document.getElementById('promptChunkContainer');
-      const hs = [...p.querySelectorAll('div[draggable][color]')].filter((h) =>
-        h.querySelector('button[title="Edit Category"]'),
-      );
-      if (firstOpen) {
-        firstOpen = false;
-        hs.forEach((h) => {
-          if (h.textContent.includes('Styles')) stash(h);
-        });
-      }
-      p.addEventListener('click', (e) => {
-        const h = e.target.closest('div[draggable][color]');
-        if (h && h.querySelector('button[title="Edit Category"]') && !e.target.closest('button')) {
-          window.clicks.push('toggle:' + h.textContent.slice(0, 10));
-          stash(h);
-          window.savedHTML = p.outerHTML;
-          return;
-        }
-        const ch = e.target.closest('div[color][title*="Click to insert"]');
-        if (ch && !e.target.closest('button')) {
-          window.clicks.push('chunk:' + ch.querySelector('span').textContent);
-          if (hasEditor) {
-            const s = document.createElement('span');
-            s.textContent = '[' + ch.querySelector('span').textContent + ']';
-            ed.appendChild(s);
-          } else {
-            document.getElementById('toasts').textContent =
-              'Click in a prompt field first, then click a chunk to insert it.';
-          }
-        }
-        const eb = e.target.closest('button[title="Edit Chunk"]');
-        if (eb) {
-          window.clicks.push('edit');
-          openForm(p, eb.closest('div[color]'));
-          return;
-        }
-        if (e.target.closest('button[title="Add Prompt Chunk"]')) {
-          window.clicks.push('add');
-          openForm(p, null);
-          return;
-        }
-        const ecb = e.target.closest('button[title="Edit Category"]');
-        if (ecb) {
-          window.clicks.push('editcat');
-          openCatForm(p, ecb.closest('div[draggable][color]'));
-          return;
-        }
-        if (e.target.closest('button[title="Add Category"]')) {
-          window.clicks.push('addcat');
-          openCatForm(p, null);
-          return;
-        }
-      });
+      const s = document.createElement('span');
+      s.textContent = `[${c.label}]`;
+      ed.appendChild(s);
+      log(`insert:${c.label}`);
     }
 
-    function openCatForm(p, headerEl) {
-      const frag = document.createDocumentFragment();
-      while (p.firstChild) frag.appendChild(p.firstChild);
+    function onClick(e) {
+      const b = e.target.closest('button');
+      if (b) {
+        if (b.title === 'Add Category') return openCatForm(null);
+        if (b.title === 'Add Prompt Chunk') return openChunkForm(null);
+        if (b.title === 'Edit Chunk') return openChunkForm(b.closest('[data-chunk]').dataset.chunk);
+        if (b.title === 'Edit Category')
+          return openCatForm(b.closest('[data-header]').dataset.header);
+        return;
+      }
+      const h = e.target.closest('[data-header]');
+      if (h) {
+        const c = cats.find((x) => x.id === h.dataset.header);
+        if (c) {
+          c.collapsed = !c.collapsed;
+          log(`collapse:${c.label}:${c.collapsed}`);
+          renderPanel();
+        }
+        return;
+      }
+      const ch = e.target.closest('[data-chunk]');
+      if (ch) insert(ch.dataset.chunk);
+    }
+
+    /* ── forms: the native panel swaps its whole content for the form ── */
+    function wireForm(scope, onCancel, onSave, onDelete) {
+      scope.querySelector('.f-actions').addEventListener('click', (e) => {
+        const b = e.target.closest('button');
+        if (!b) return;
+        const t = b.textContent.trim();
+        if (t === 'Cancel') onCancel();
+        else if (t === 'Delete') onDelete();
+        else if (t === 'Save') onSave();
+      });
+      const x = scope.querySelector('[title="Close"]');
+      if (x) x.addEventListener('click', onCancel);
+    }
+
+    function openChunkForm(chunkId) {
+      const c = chunkId ? chunks.get(chunkId) : null;
+      const curCat = c ? bodyOf(panel().querySelector(`[data-chunk="${chunkId}"]`)) : null;
       const st = {
-        label: headerEl ? headerEl.querySelector('span[style]').textContent : '',
-        color: headerEl ? headerEl.getAttribute('color') : '#6b7280',
+        label: c?.label ?? '',
+        expansion: c?.expansion ?? '',
+        color: c?.color ?? '#6B7280',
+        cat: cats.find((k) => k.id === curCat)?.label ?? '',
       };
-      const f = document.createElement('div');
-      f.id = 'mockcatform';
-      f.innerHTML =
-        '<button>X</button><input type="text" placeholder="Category name..."><input value="' +
-        st.color +
-        '" spellcheck="false">' +
-        (headerEl ? '<button>Delete</button>' : '') +
-        '<button>Cancel</button><button>Save</button>';
-      p.appendChild(f);
+      panel().innerHTML = `<div class="sc-7d061733-0 fqZsGH" id="mockform"><div class="sc-7d061733-23 kwOXSf"><span class="sc-7d061733-2">${
+        c ? 'Edit Prompt Chunk' : 'New Prompt Chunk'
+      }</span><button class="sc-7b42663-2" title="Close">✕</button></div><label>Name</label><input type="text" value="${esc(
+        st.label,
+      )}" placeholder="e.g., My Style Tags"><label>Content</label><textarea>${esc(
+        st.expansion,
+      )}</textarea><label>Category</label><select><option value="">Uncategorized</option>${cats
+        .map(
+          (k) =>
+            `<option value="${esc(k.label)}"${k.label === st.cat ? ' selected' : ''}>${esc(k.label)}</option>`,
+        )
+        .join('')}</select><label>Color</label><div><input value="${
+        st.color
+      }" spellcheck="false"></div><div class="f-actions">${
+        c ? '<button>Delete</button>' : ''
+      }<button>Cancel</button><button>Save</button></div></div>`;
+      const f = panel().querySelector('#mockform');
       const [name, hex] = f.querySelectorAll('input');
-      name.value = st.label;
-      name.addEventListener('input', () => (st.label = name.value));
-      hex.addEventListener('input', () => (st.color = hex.value));
-      const restore = () => {
-        f.remove();
-        while (frag.firstChild) p.appendChild(frag.firstChild);
-        window.savedHTML = p.outerHTML;
-      };
-      f.addEventListener('click', (e) => {
-        const b = e.target.closest('button');
-        if (!b) return;
-        const t = b.textContent;
-        if (t === 'Cancel' || t === 'X') restore();
-        else if (t === 'Delete') {
-          headerEl.closest('.jceqyz').remove();
-          window.clicks.push('delcat');
-          restore();
-        } else if (t === 'Save') {
-          if (!st.label.trim()) {
-            return;
-          }
-          if (headerEl) {
-            headerEl.querySelector('span[style]').textContent = st.label;
-            headerEl.setAttribute('color', st.color);
-            window.clicks.push('savedcat:' + st.label + ':' + st.color);
-          } else {
-            const w = document.createElement('div');
-            w.className = 'sc-7d061733-27 jceqyz';
-            w.innerHTML =
-              '<div draggable="true" color="' +
-              st.color +
-              '" class="sc-7d061733-25"><span class="sc-7d061733-28 dUrBch"><div></div></span><span style="flex: 1 1 0%;">' +
-              st.label +
-              '</span><span style="font-size: 0.75rem; opacity: 0.6;">0</span><button title="Edit Category">✎</button></div><div class="sc-7d061733-26 dCsPrf"></div>';
-            frag.querySelector('.jceqyz').parentElement.appendChild(w);
-            window.clicks.push('newcat:' + st.label + ':' + st.color);
-          }
-          restore();
-        }
+      const ta = f.querySelector('textarea');
+      const sel = f.querySelector('select');
+      name.addEventListener('input', () => {
+        st.label = name.value;
       });
+      ta.addEventListener('input', () => {
+        st.expansion = ta.value;
+      });
+      sel.addEventListener('change', () => {
+        st.cat = sel.value;
+      });
+      hex.addEventListener('input', () => {
+        st.color = hex.value;
+      });
+      wireForm(
+        f,
+        () => {
+          log('cancel');
+          renderPanel();
+        },
+        () => {
+          if (!st.label.trim()) return toast('Name is required');
+          if (!st.expansion.trim()) return toast('Content is required');
+          saveChunk(chunkId, st, curCat);
+        },
+        () => deleteChunk(chunkId, curCat),
+      );
     }
 
-    function openForm(p, chunkEl) {
-      const frag = document.createDocumentFragment();
-      while (p.firstChild) frag.appendChild(p.firstChild);
-      const cats = [...frag.querySelectorAll('div[draggable][color]')].filter((h) =>
-        h.querySelector('button[title="Edit Category"]'),
-      );
-      const catOf = (el) => {
-        const h = cats.find(
-          (h) =>
-            h.nextElementSibling.contains(el) ||
-            (h.nextElementSibling.dataset.s || '').includes(
-              el.getAttribute('title').split('\n')[0].slice(0, 20),
-            ),
-        );
-        return h ? h.querySelector('span[style]').textContent : '';
-      };
-      const st = { label: '', expansion: '', color: '#6b7280', cat: '' };
-      if (chunkEl) {
-        st.label = chunkEl.querySelector('span').textContent;
-        st.expansion = chunkEl.getAttribute('title').replace(/\n\nClick to insert.*$/, '');
-        st.color = chunkEl.getAttribute('color');
-        st.cat = catOf(chunkEl);
+    function saveChunk(chunkId, st, curCatId) {
+      let id = chunkId;
+      if (!id) {
+        id = newId();
+        chunks.set(id, { id, label: '', expansion: '', color: '#6B7280' });
+        rootOrder.push(id);
       }
-      const orig = { ...st };
-      const f = document.createElement('div');
-      f.id = 'mockform';
-      f.innerHTML =
-        '<button>X</button><input type="text" placeholder="e.g., My Style Tags"><textarea placeholder="Enter the tags"></textarea><select><option value="">Uncategorized</option>' +
-        cats
-          .map((h) => {
-            const l = h.querySelector('span[style]').textContent;
-            return '<option value="' + l.toLowerCase() + '">' + l + '</option>';
-          })
-          .join('') +
-        '</select><input value="' +
-        st.color +
-        '" spellcheck="false">' +
-        (chunkEl ? '<button>Delete</button>' : '') +
-        '<button>Cancel</button><button>Save</button>';
-      p.appendChild(f);
-      const [name, hex] = f.querySelectorAll('input'),
-        ta = f.querySelector('textarea'),
-        sel = f.querySelector('select');
-      name.value = st.label;
-      ta.value = st.expansion;
-      sel.value = st.cat.toLowerCase();
-      name.addEventListener('input', () => (st.label = name.value));
-      ta.addEventListener('input', () => (st.expansion = ta.value));
-      sel.addEventListener(
-        'change',
-        () =>
-          (st.cat =
-            sel.selectedOptions[0].textContent === 'Uncategorized'
-              ? ''
-              : sel.selectedOptions[0].textContent),
-      );
-      hex.addEventListener('input', () => (st.color = hex.value));
-      const restore = () => {
-        f.remove();
-        while (frag.firstChild) p.appendChild(frag.firstChild);
-        window.savedHTML = p.outerHTML;
-      };
-      const mk = () => {
-        const w = document.createElement('div');
-        w.className = 'sc-7d061733-30 cyEZwx';
-        w.innerHTML =
-          '<div class="sc-7d061733-29 kPgOiw"></div><div draggable="true" color="' +
-          st.color +
-          '" title="' +
-          st.expansion.replace(/"/g, '&quot;') +
-          '\n\nClick to insert, drag to reorder" class="sc-7d061733-4"><span>' +
-          st.label +
-          '</span><button title="Edit Chunk">✎</button></div><div class="sc-7d061733-29 eJMBPP"></div>';
-        return w;
-      };
-      f.addEventListener('click', (e) => {
-        const b = e.target.closest('button');
-        if (!b) return;
-        const t = b.textContent;
-        if (t === 'Cancel' || t === 'X') restore();
-        else if (t === 'Delete') {
-          chunkEl.closest('.cyEZwx').remove();
-          restore();
-        } else if (t === 'Save') {
-          if (!st.label.trim() || !st.expansion.trim()) {
-            document.getElementById('toasts').textContent = 'Name is required';
-            return;
-          }
-          if (chunkEl) chunkEl.closest('.cyEZwx').remove();
-          const h = cats.find((h) => h.querySelector('span[style]').textContent === st.cat);
-          const body = h ? h.nextElementSibling : null;
-          const w = mk();
-          if (body) {
-            if (body.dataset.s) {
-              body.dataset.s += w.outerHTML;
-            } else body.insertBefore(w, body.lastElementChild);
-          } else
-            frag
-              .querySelector('.jceqyz')
-              .insertBefore(w, frag.querySelector('.jceqyz').lastElementChild);
-          window.clicks.push('saved:' + st.label + ':' + st.cat + ':' + st.color);
-          restore();
-        }
+      const c = chunks.get(id);
+      c.label = st.label.trim();
+      c.expansion = st.expansion.trim();
+      c.color = st.color;
+      const target = cats.find((k) => k.label === st.cat) || null;
+      log(`saved:${c.label}:${st.cat}:${c.color}`);
+      if (curCatId !== (target?.id ?? null)) onMove(id, curCatId, target?.id ?? null, 0);
+      else {
+        save();
+        renderPanel();
+      }
+    }
+
+    function deleteChunk(chunkId, curCatId) {
+      const list = orderOf(curCatId);
+      const si = list.indexOf(chunkId);
+      if (si >= 0) list.splice(si, 1);
+      chunks.delete(chunkId);
+      log(`delchunk:${chunkId}`);
+      save();
+      renderPanel();
+    }
+
+    function openCatForm(catId) {
+      const c = cats.find((k) => k.id === catId) || null;
+      const st = { label: c?.label ?? '', color: c?.color ?? '#6B7280' };
+      panel().innerHTML = `<div class="sc-7d061733-0 fqZsGH" id="mockcatform"><div class="sc-7d061733-23 kwOXSf"><span class="sc-7d061733-2">${
+        c ? 'Edit Category' : 'New Category'
+      }</span><button class="sc-7b42663-2" title="Close">✕</button></div><label>Name</label><input type="text" value="${esc(
+        st.label,
+      )}" placeholder="Category name..."><label>Color</label><div><input value="${
+        st.color
+      }" spellcheck="false"></div><div class="f-actions">${
+        c ? '<button>Delete</button>' : ''
+      }<button>Cancel</button><button>Save</button></div></div>`;
+      const f = panel().querySelector('#mockcatform');
+      const [name, hex] = f.querySelectorAll('input');
+      name.addEventListener('input', () => {
+        st.label = name.value;
       });
+      hex.addEventListener('input', () => {
+        st.color = hex.value;
+      });
+      wireForm(
+        f,
+        () => {
+          log('cancel');
+          renderPanel();
+        },
+        () => {
+          if (!st.label.trim()) return toast('Name is required');
+          saveCat(c, st);
+        },
+        () => deleteCat(c),
+      );
+    }
+
+    function saveCat(c, st) {
+      if (c) {
+        c.label = st.label.trim();
+        c.color = st.color;
+        log(`savedcat:${c.label}:${c.color}`);
+      } else {
+        cats.push({
+          id: `k${++seq}`,
+          label: st.label.trim(),
+          color: st.color,
+          collapsed: false,
+          childOrder: [],
+        });
+        log(`newcat:${st.label}`);
+      }
+      save();
+      renderPanel();
+    }
+
+    function deleteCat(c) {
+      if (!c) return renderPanel();
+      rootOrder.push(...c.childOrder);
+      cats = cats.filter((k) => k !== c);
+      log(`delcat:${c.label}`);
+      save();
+      renderPanel();
+    }
+
+    /* ── panel open / close ── */
+    const handlers = {
+      click: onClick,
+      dragstart: onDragStart,
+      dragend: onDragEnd,
+      dragover: onDragOver,
+      dragleave: onDragLeave,
+      drop: onDrop,
+    };
+
+    function openPanel() {
+      if (panel()) return;
+      document.body.insertAdjacentHTML(
+        'beforeend',
+        '<div id="promptChunkContainer" data-popper-placement="right-start" class="sc-5371c89c-1 dmPIpI"></div>',
+      );
+      const p = panel();
+      for (const [type, fn] of Object.entries(handlers)) p.addEventListener(type, fn);
+      renderPanel();
+      log('open');
     }
 
     document.getElementById('tbbtn').addEventListener('click', () => {
-      const p = document.getElementById('promptChunkContainer');
-      if (p) p.remove();
-      else openPanel();
+      const p = panel();
+      if (p) {
+        p.remove();
+        log('close');
+      } else openPanel();
     });
     document.addEventListener('mousedown', (e) => {
-      const p = document.getElementById('promptChunkContainer');
-      if (p && !p.contains(e.target) && !e.target.closest('#tbbtn')) p.remove();
+      const p = panel();
+      if (p && !p.contains(e.target) && !e.target.closest('#tbbtn')) {
+        p.remove();
+        log('close');
+      }
     });
+
+    window.mock = {
+      order: () => ({
+        cats: cats.map((c) => ({
+          label: c.label,
+          chunks: c.childOrder.map((id) => chunks.get(id).label),
+        })),
+        root: rootOrder.map((id) => chunks.get(id).label),
+      }),
+      log: () => window.mockLog,
+      openPanel,
+    };
   </script>
   <script>
     // mimics NovelAI's global shortcut handlers (w/a/s/d/f/q/+/-/1): they only skip real inputs via document.activeElement
@@ -298,7 +653,7 @@
         'wasdfq+-=1'.includes(e.key.toLowerCase())
       ) {
         e.preventDefault();
-        window.clicks.push('site-shortcut:' + e.key);
+        window.mockLog.push('site-shortcut:' + e.key);
       }
     });
   </script>
